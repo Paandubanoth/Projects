@@ -1,0 +1,141 @@
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <queue>
+#include <string>
+
+using namespace std;
+
+template <typename T>
+class pri_Q {
+private:
+vector<T> data;
+void up(int i){
+ while(i>0){
+    int p=(i-1)/2;
+    if(data[p] > data[i]) {
+        swap(data[p],data[i]);
+         i=p;
+}
+else break;
+    }
+}    
+void down(int i) {
+    int s=data.size();
+while(true){
+    int l=2*i+1;
+    int r=2*i+2;
+    int m=i;
+if(l<s && data[m]>data[l]) m = l;
+if(r < s && data[m]>data[r]) m = r;
+if (m !=i){
+    swap(data[i], data[m]);
+      i = m;
+}
+else break;
+   }
+ }
+public:
+pri_Q(){}
+void add(const T& x){
+  data.push_back(x);
+  up(data.size()-1);
+ }
+void remove(){
+    if (!data.empty()){
+     swap(data[0],data.back());
+     data.pop_back();
+    down(0);
+     }
+ } 
+const T& peek()const{
+    if (data.empty())throw runtime_error("Empty");
+    return data[0];
+    }
+int count() const { return data.size(); }
+bool isEmpty() const { return data.empty(); }
+};
+
+class noDE {
+private:
+    string roomID;
+    int distValue;
+    int parityValue;
+public:
+noDE(string id, int d, int p):roomID(move(id)), distValue(d), parityValue(p){}
+    
+auto name() const -> string { return roomID; }
+auto distance() const -> int { return distValue; }
+auto parity() const -> int { return parityValue; }
+auto setDistance(int d) -> void { distValue = d; }
+auto operator>(const noDE& other) const -> bool {
+    return distValue > other.distValue;
+    }
+};
+
+class mapgraph {
+private:
+ unordered_map<string, vector<pair<string, int>>> connections;
+    
+public:
+void link(string a, string b, int weight){
+connections[a].push_back({b, weight});
+connections[b].push_back({a, weight});
+    }
+int findPath(string start, string end) {
+  unordered_map<string, vector<int>> pathLen;
+for (auto& x : connections){
+    pathLen[x.first] = {numeric_limits<int>::max(), numeric_limits<int>::max()};
+        }
+pri_Q<noDE>q;
+q.add(noDE(start, 0, 0));
+pathLen[start][0] = 0;
+while (!q.isEmpty()){
+    noDE curr = q.peek();
+    q.remove();
+            
+string currRoom = curr.name();
+int currDist = curr.distance();
+int currPar = curr.parity();
+if(currRoom == end && currPar == 0) 
+          return currDist;
+for(auto& x : connections[currRoom]){
+    string next = x.first;
+    int weight = x.second;
+    int newDist = currDist + weight;
+    int newPar = 1 - currPar;
+                
+if(newDist < pathLen[next][newPar]){
+    pathLen[next][newPar] = newDist;
+    q.add(noDE(next, newDist, newPar));
+          }
+        }
+     }
+      return -1;
+   }
+};
+
+int main() {
+    int n, m;
+    cin >> n >> m;
+    
+vector<string> rooms(n);
+for(int i = 0; i < n; i++)
+   cin >> rooms[i];
+    
+mapgraph g;
+for(int i = 0; i < m; i++){
+    string a, b;
+    int weight;
+    cin >> a >> b >> weight;
+    g.link(a, b, weight);
+ }
+    
+string start, end;
+    cin >> start >> end;
+    
+int res = g.findPath(start, end);
+    cout << res << endl;
+    
+    return 0;
+}
