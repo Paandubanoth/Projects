@@ -1,0 +1,467 @@
+#include <iostream>
+#include <string>
+#include <map>
+#include <vector>
+using namespace std;
+
+
+class Book
+{
+    private:
+        string isbn;
+        int copiesAvailable;
+        int totalCopies;
+    public:
+        string title;
+        string author;
+        Book()
+        {
+            title="UnknownTitle";
+            author="UnknownAuthor";
+            isbn="ISBN";
+            copiesAvailable=0;
+            totalCopies=5;
+        }
+        Book(string title,string author,string Isbn,int copiesAvailable,int totalCopies)
+        {
+            this->title=title;
+            this->author=author;
+            this->isbn=Isbn;
+            this->copiesAvailable=copiesAvailable;
+            this->totalCopies=totalCopies;
+        }
+        Book(Book &b,string Isbn)
+        {
+            this->title=b.title;
+            this->author=b.author;
+            this->isbn=Isbn;
+            this->copiesAvailable=b.copiesAvailable;
+            this->totalCopies=b.totalCopies;
+        }
+
+        // Getters
+        string getIsbn(){ return isbn; }
+        int  getCopiesAvailable(){ return copiesAvailable; }
+        int getTotalCopies(){ return totalCopies; }
+        string getTitle(){ return title; }
+        string getAuthor(){ return author; }
+        //setters
+        void updateCopies(int count)
+        {
+            int n=copiesAvailable+count;
+            int m=totalCopies+count;
+            if(n>=0 || m>=0)
+            {
+                copiesAvailable+=count;
+                totalCopies+=count;
+            }
+            else{
+                cout<<"Invalid request! Count becomes negative"<<endl;
+            }
+            
+        }
+        //Methods
+        bool borrowBook()
+        {
+            if(copiesAvailable>0){
+                copiesAvailable--;
+                return true;
+            }
+            else{
+                cout<<"Invalid request! Copy of book not available"<<endl;
+                return false;
+            }
+        }
+        bool returnBook()
+        {
+            if(copiesAvailable <=totalCopies)
+            {
+                copiesAvailable++;
+                return true;
+            }
+            else{
+                cout<<"Invalid request! Copy of book exceeds total copies"<<endl;
+                return false;
+            }
+        }
+        void printDetails()
+        {
+            cout<<this->title<<" "<<this->author<<endl;
+        }
+
+        bool updateCopiesCount(int count)
+        {
+                copiesAvailable=count; 
+                return true;            
+        }
+
+};
+
+class Member{
+    private:
+        string memberID;
+        map<string, int> borrowedBooks;
+        int borrowLimit;
+    public:
+        string name;
+        int num_bks;
+
+        //getters
+        string getMemberID(){ return memberID; }
+        int getBorrowLimit(){ return borrowLimit; }
+        string getName_of_member(){ return name; }
+        int getnubbksbrrd(){return num_bks; }
+
+        Member(string memberID,string name,int borrowLimit)
+        {
+            this->memberID=memberID;
+            this->name=name;
+            this->borrowLimit=borrowLimit;
+            this->num_bks=0;
+        }
+        Member(string memberID,string name){
+            this->memberID=memberID;
+            this->name=name;
+            borrowLimit=3;
+            this->num_bks=0;
+        }
+
+        bool borrowBook(string isbn)
+        {
+            //write if condition for copies availlable
+            if(num_bks<borrowLimit)
+            {
+                borrowedBooks[isbn]++;
+                num_bks++;
+                return true;
+            }
+            else{
+                cout<<"Invalid request! Borrow limit exceeded"<<endl;
+                return false;
+            }
+        }
+
+        bool returnBook(string isbn)
+        {
+            auto t=borrowedBooks.find(isbn);
+            if(t->first==isbn){
+                borrowedBooks[isbn]--;
+                num_bks--;
+                if(borrowedBooks[isbn]<=0)
+                {
+                    borrowedBooks.erase(isbn);
+                }
+                return true;
+            }
+            else{
+                cout<<"Invalid request! Book not borrowed"<<endl;
+                return false;
+            }
+        }
+        void printDetails()
+        {
+            for(auto it=borrowedBooks.begin();it!=borrowedBooks.end();++it)
+            {
+                cout<<this->memberID<<" "<<this->name<<" "<<it->first<<" "<<it->second<<endl; 
+            }
+        }
+
+        bool searchBorrowedbook(string isbn)
+        {
+            auto it=borrowedBooks.find(isbn);
+            if(it->first==isbn)
+            {
+                return true;
+            }
+
+            return false;
+        }
+        
+};
+
+class Library{
+    private:
+        vector<Book>books;
+        vector<Member>members;
+    public:
+
+        Book* getBook(string Isbn)
+        {
+            for(size_t i=0;i<books.size();i++)
+            {
+                
+                if(books[i].getIsbn()==Isbn)
+                {
+                    Book* ptr=&books[i];
+                    return ptr;
+                }
+            }
+            Book* ptr=nullptr;
+
+            return ptr;
+            //if books is not present then cout book not found
+            //cout<<"Invalid request! Copy of book not available"<<endl;
+        }
+        Member* getMember(string memberId)
+        {
+            for(size_t i=0;i<members.size();i++)
+            {
+                if(members[i].getMemberID()==memberId)
+                {
+                    Member * ptr=&members[i];
+                    return ptr;
+                }
+            }
+            return nullptr;
+        }
+
+        bool addBook(Book& bb)
+        {
+            if(bb.getCopiesAvailable()<=bb.getTotalCopies())
+            {
+
+                if(books.size()==0)
+                {
+                    books.push_back(bb);
+                    return true;
+                }
+                else{
+                for(size_t i=0;i<books.size();i++)
+                {
+                    if(books[i].getIsbn()==bb.getIsbn())
+                    {
+                      cout<<"Invalid request! Book with same isbn already exists"<<endl;
+                      return false;
+                    }
+                }
+
+                    books.push_back(bb);
+                    return true; 
+            }
+            }
+            return false;
+        }
+
+        bool registerMember(Member& mm)
+        {
+            if(members.size()==0)
+            {
+                members.push_back(mm);
+                return true;
+            }
+            else{
+            for(size_t i=0;i<members.size();i++)
+                {
+                    if(members[i].getMemberID()==mm.getMemberID())
+                    {
+                        cout<<"Invalid request! Member with same id already exists"<<endl;
+                        return false;
+                    }
+                }
+                members.push_back(mm);
+                return true;
+            }   
+        }
+
+        bool borrowBook(string memberID, string isbn)
+        {
+            int flag=0;
+            int k=-1;
+            int j=-1;
+            int noofbrrbks=0;
+            for(size_t i=0;i<books.size();i++)
+            {
+                if(books[i].getIsbn()==isbn)
+                {
+                    flag++;
+                    j=i;
+                }
+            }
+            for(size_t i=0;i<members.size();i++)
+            {
+                if(members[i].getMemberID()==memberID)
+                {
+                    flag++;
+                    noofbrrbks=members[i].getnubbksbrrd();
+                    k=i;
+                }
+            }
+            if(books[j].getCopiesAvailable()>0)
+            {
+                 if(flag==2)
+                {
+                    if(noofbrrbks < members[k].getBorrowLimit())
+                    {
+                        members[k].borrowBook(isbn);
+                        books[j].updateCopiesCount(books[j].getCopiesAvailable()-1);
+                        return true;
+                    }
+                    else{
+                            cout<<"Invalid request! Borrow limit exceeded"<<endl;
+                        }
+
+                }
+            }
+           
+            else{
+                cout<<"Invalid request! Copy of book not available"<<endl;
+            }
+            return false;
+            
+        }
+
+        bool returnBook(string memberID, string isbn)
+        {
+            int flag=0;
+            int k=-1;
+            int m=-1;
+            for(size_t i=0;i<books.size();i++)
+            {
+                if(books[i].getIsbn()==isbn)
+                {
+                    flag++;
+                    k=i;
+                }
+            }
+            for(size_t i=0;i<members.size();i++)
+            {
+                if(members[i].getMemberID()==memberID)
+                {
+                    flag++;
+                    m=i;
+                }
+            }
+            if(flag==2)
+            {
+                if(books[k].getCopiesAvailable()+1 <= books[k].getTotalCopies())
+            {
+                bool t=members[m].searchBorrowedbook(isbn);
+                if(t)
+                {
+                    members[m].returnBook(isbn);
+                    books[k].updateCopiesCount(books[k].getCopiesAvailable()+1);
+
+                    return true;
+                }
+                else{
+                        cout<<"Invalid request! Book not borrowed"<<endl;
+                    }
+
+            }
+          else{
+            cout<<"Invalid request! Copy of book exceeds total copies"<<endl;
+            }
+            }
+            return false;
+        }
+
+        void printLibraryDetails()
+        {
+          for(auto it=books.begin();it!=books.end();++it)
+          {
+            cout<<it->title<<" "<<it->author<<" "<<it->getCopiesAvailable()<<endl;
+          }  
+          for(auto x=members.begin();x!=members.end();x++)
+          {
+            cout<<x->getMemberID()<<" "<<x->getName_of_member()<<endl;
+          }
+        }
+};
+
+int main(){
+    Library lib;
+    string s=" ";
+    while(s!="Done")
+    {
+        cin>>s;
+        if(s=="Book")
+        {
+            string st;
+            cin>>st;
+            if(st=="None")
+            {
+                Book b;
+                lib.addBook(b);
+            }
+            else if(st=="ExistingBook")
+            {
+                string OldIsbn,NewIsbn;
+                cin>>OldIsbn>>NewIsbn;
+                Book* ssb=lib.getBook(OldIsbn);
+                Book b(*ssb,NewIsbn);
+                lib.addBook(b);
+            }
+            else{
+                string author,Isbn;
+                int copiesAvailable,totalCopies;
+                cin>>author>>Isbn>>copiesAvailable>>totalCopies;
+                Book b(st,author,Isbn,copiesAvailable,totalCopies);
+                lib.addBook(b);
+            }
+        }
+        else if(s=="UpdateCopiesCount")
+        {
+            string Isbn;
+            int NewCount;
+            cin>>Isbn>>NewCount;
+            Book* b=lib.getBook(Isbn);
+            b->updateCopies(NewCount);
+        }
+        else if(s=="Member")
+        {
+            string st;
+            cin>>st;
+            if(st=="NoBorrowLimit")
+            {
+                string MemberId ,Name;
+                cin>>MemberId>>Name;
+                Member m(MemberId,Name);
+                lib.registerMember(m);
+            }
+            else{
+                string Name;
+                int BorrowLimit;
+                cin>>Name>>BorrowLimit;
+                Member m(st,Name,BorrowLimit);
+                lib.registerMember(m);
+            }
+        }
+        else if(s=="Borrow")
+        {
+            string MemberId, isbn;
+            cin>>MemberId>>isbn;
+            lib.borrowBook(MemberId,isbn);
+        }
+        else if(s=="Return")
+        {
+            string MemberId, isbn;
+            cin>>MemberId>>isbn;
+            lib.returnBook(MemberId,isbn);
+        }
+        else if(s=="PrintBook")
+        {
+            string isbn;
+            cin>>isbn;
+            Book *b=lib.getBook(isbn);
+            if(b!=nullptr)
+            {
+                b->printDetails();
+            }
+            
+        }
+        else if(s=="PrintMember")
+        {
+            string memberId;
+            cin>>memberId;
+            Member *m=lib.getMember(memberId);
+            if(m!=nullptr)
+            {
+                m->printDetails();
+            }
+            
+        }
+        else if(s=="PrintLibrary"){
+            lib.printLibraryDetails();
+        }
+    }
+}
