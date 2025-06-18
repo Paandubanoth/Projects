@@ -1,0 +1,170 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+#include <limits>
+
+using namespace std;
+
+class ChessBoard {
+private:
+    int n;
+    vector<vector<long long>> mat;
+public:
+    ChessBoard(int sz) : n(sz), mat(sz, vector<long long>(sz)) {}
+
+ void takeInput() {
+   for (int i = 0; i < n; i++) 
+   for (int j = 0; j < n; j++) 
+      cin >> mat[i][j];
+ }
+ void rowSort(bool asc) {
+  for (auto &row : mat) {
+    if (asc) sort(row.begin(), row.end());
+    else sort(row.rbegin(), row.rend());
+   }
+ }
+ long long findInversions() {
+  vector<long long> flat;
+    for (auto &row : mat) 
+     flat.insert(flat.end(), row.begin(), row.end());
+      return mergeSortCount(flat, 0, flat.size() - 1);
+    }
+ void printMatrix() {
+   for (auto &row : mat) {
+     for (auto &v : row) cout << v << " ";
+       cout << "\n";
+   }
+ }
+private:
+long long mergeCount(vector<long long> &arr, int l, int m, int r) {
+  int i = 0, j = 0, k = l;
+vector<long long> L(arr.begin() + l, arr.begin() + m + 1);
+vector<long long> R(arr.begin() + m + 1, arr.begin() + r + 1);
+long long inv = 0;
+while (i < L.size() && j < R.size()) {
+  if (L[i] <= R[j]) arr[k++] = L[i++];
+    else {
+     arr[k++] = R[j++];
+     inv += (L.size() - i);
+     }
+ }
+  while (i < L.size()) arr[k++] = L[i++];
+   while (j < R.size()) arr[k++] = R[j++];
+     return inv;
+}
+long long mergeSortCount(vector<long long> &arr, int l, int r) {
+ if (l >= r) return 0;
+  int m = l + (r - l) / 2;
+    long long inv = 0;
+inv += mergeSortCount(arr, l, m);
+inv += mergeSortCount(arr, m + 1, r);
+inv += mergeCount(arr, l, m, r);
+ return inv;
+    }
+};
+
+struct Point {
+    long long x, y;
+    int idx;
+};
+
+class Space {
+public:
+ static void closestPoints(vector<Point> &pts) {
+  sort(pts.begin(), pts.end(), [](Point &a, Point &b) {
+    return a.x < b.x || (a.x == b.x && a.y < b.y);
+});
+pair<Point, Point> ans = findPair(pts, 0, pts.size() - 1);
+ if(ans.first.idx < ans.second.idx)
+    cout << ans.first.x << " " << ans.first.y << " " << ans.second.x << " " << ans.second.y << "\n";
+else
+    cout << ans.second.x << " " << ans.second.y << " " << ans.first.x << " " << ans.first.y << "\n";
+}
+private:
+static long long dist(Point &a, Point &b) {
+    return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
+}
+static pair<Point, Point> findPair(vector<Point> &pts, int l, int r) {
+  if (r - l <= 7) return bruteForce(pts, l, r);
+    int m = (l + r) / 2;
+    auto leftPair = findPair(pts, l, m);
+    auto rightPair = findPair(pts, m + 1, r);
+    
+  pair<Point, Point> best = comparePair(leftPair, rightPair);
+
+    long long midX = pts[m].x;
+    vector<Point> strip;
+    for (int i = l; i <= r; i++) {
+      if ((pts[i].x - midX) * (pts[i].x - midX) <= dist(best.first, best.second))
+          strip.push_back(pts[i]);
+ }
+sort(strip.begin(), strip.end(), [](Point &a, Point &b) { return a.y < b.y; });
+   for (int i = 0; i < strip.size(); i++) {
+     for (int j = i + 1; j < strip.size() && (strip[j].y - strip[i].y) * (strip[j].y - strip[i].y) <= dist(best.first, best.second); j++) {
+          best = comparePair(best, {strip[i], strip[j]});
+    }
+  }
+    return best;
+}
+static pair<Point,Point> comparePair(pair<Point,Point> a,pair<Point,Point> b){
+    Point p[2]={a.first,a.second};
+    Point q[2]={b.first,b.second};
+     if(dist(p[1],p[0])!=dist(q[1],q[0])) return (dist(p[1],p[0])<dist(q[1],q[0]) ? a : b);
+        if(p[0].x!=q[0].x) return (p[0].x<q[0].x ? a : b);
+        if(p[0].y!=q[0].y) return (p[0].y<q[0].y ? a : b);
+        if(p[1].x!=q[1].x) return (p[1].x<q[1].x ? a : b);
+        if(p[1].y!=q[1].y) return (p[1].y<q[1].y ? a : b);
+
+        return a;
+    
+    }
+static pair<Point, Point> bruteForce(vector<Point> &pts, int l, int r) {
+      pair<Point, Point> best = {pts[l], pts[l + 1]};
+
+  long long minD = dist(pts[l], pts[l + 1]);
+     for (int i = l; i <= r; i++) {
+        for (int j = i + 1; j <= r; j++) {
+        long long d = dist(pts[i], pts[j]);
+        if (d < minD) {
+             minD = d;
+             best = {pts[i], pts[j]};
+        }
+      }
+    }
+    return best;
+ }
+};
+
+int main() {
+ChessBoard *board = nullptr;
+string cmd;
+  while (cin >> cmd) {
+    if (cmd == "CREATE_2D") {
+        int n; cin >> n;
+        if (board) delete board;
+            board = new ChessBoard(n);
+            board->takeInput();
+    }
+else if (cmd == "SORT_2D") {
+    string order; cin >> order;
+    board->rowSort(order == "ascending");
+}
+ else if (cmd == "INVERSION_2D") {
+    cout << board->findInversions() << "\n";
+}
+ else if (cmd == "DISPLAY_2D") {
+     board->printMatrix();
+}
+ else if (cmd == "CLOSEST_2D") {
+    int num; cin >> num;
+    vector<Point> pts(num);
+    for (int i = 0; i < num; i++) cin >> pts[i].x >> pts[i].y, pts[i].idx = i;
+    Space::closestPoints(pts);
+}
+ else if (cmd == "END") {
+    delete board;
+      break;
+      }
+    }
+}
