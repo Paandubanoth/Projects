@@ -1,0 +1,262 @@
+#include <iostream>
+#include <algorithm>
+#include <vector>
+#include <cmath>
+#include <cstdio>
+#include <iomanip>
+using namespace std;
+
+class Complex {
+public:
+long long int real, imag;
+  Complex() : real(0), imag(0) {}
+  Complex(long long r, long long i) : real(r), imag(i) {}
+
+Complex operator+(const Complex& o) const {
+ return Complex(real + o.real, imag + o.imag);
+  } 
+Complex operator-(const Complex& o) const {
+  return Complex(real - o.real, imag - o.imag);
+    }
+Complex operator*(const Complex& o) const {
+  return Complex(real * o.real - imag * o.imag, real * o.imag + imag * o.real);
+  }
+Complex& operator+=(const Complex& o) {
+  real += o.real;
+  imag += o.imag;
+    return *this;
+}
+Complex& operator-=(const Complex& o) {
+ real -= o.real;
+ imag -= o.imag;
+   return *this;
+    }
+};
+template<typename T>
+class Polynomial {
+ vector<T> coeffs;
+public:
+Polynomial() {}
+Polynomial(const vector<T>& c) : coeffs(c) {}
+ vector<T> getCoeffs() const { return coeffs; }
+ size_t degree() const { return coeffs.empty() ? 0 : coeffs.size() - 1; }
+void pad(size_t n) { while (coeffs.size() < n) coeffs.push_back(T()); }
+};
+
+template<typename T>
+class PolyMult {
+public:
+ static Polynomial<T> multiply(const Polynomial<T>& a, const Polynomial<T>& b) {
+vector<T> A = a.getCoeffs(), B = b.getCoeffs();
+  size_t n = 1;
+while (n < A.size() + B.size() - 1) n *= 2;
+ A.resize(n, T());
+ B.resize(n, T());
+vector<T> res = kdiv_con(A, B);
+res.resize(a.degree() + b.degree() + 1);
+return Polynomial<T>(res);
+  }
+private:
+static vector<T> kdiv_con(const vector<T>& A, const vector<T>& B) {
+size_t n = A.size();
+ if (n == 1) return {A[0] * B[0]};
+
+size_t mid = n / 2;
+vector<T> A_low(A.begin(), A.begin() + mid);
+vector<T> A_high(A.begin() + mid, A.end());
+vector<T> B_low(B.begin(), B.begin() + mid);
+vector<T> B_high(B.begin() + mid, B.end());
+vector<T> P1 = kdiv_con(A_low, B_low);
+vector<T> P2 = kdiv_con(A_high, B_high);
+vector<T> A_sum(mid), B_sum(mid);
+ for (size_t i = 0; i < mid; ++i) {
+  A_sum[i] = A_low[i] + A_high[i];
+  B_sum[i] = B_low[i] + B_high[i];
+ }
+vector<T> P3 = kdiv_con(A_sum, B_sum);
+vector<T> result(n * 2, T());
+ for (size_t i = 0; i < P1.size(); ++i) result[i] += P1[i];
+ for (size_t i = 0; i < P2.size(); ++i) result[i + n] += P2[i];
+ for (size_t i = 0; i < P3.size(); ++i) result[i + mid] += P3[i] - P1[i] - P2[i];
+   return result;
+    }
+};
+template<typename T>
+class PolyEval {
+public:
+static T evaluate(const Polynomial<T>& p, T x) {
+  T res = T();
+    for (size_t i = 0; i < p.getCoeffs().size(); ++i) {
+  T term = p.getCoeffs()[i];
+    for (size_t j = 0; j < i; ++j) {
+    term = term * x;  
+}
+res = res + term;
+ }
+return res;
+    }
+};
+template <>
+class PolyEval<string> {
+public:
+static string evaluate(const Polynomial<string>& p, int x) {
+  string res;
+  size_t n = p.getCoeffs().size();
+for (size_t i = 0; i < n; ++i) { 
+    size_t idx = n - 1 - i;  
+int rep = 1;
+  for (size_t j = 0; j < idx; ++j) {
+    rep *= x; 
+}
+for (int j = 0; j < rep; ++j) {
+    res += p.getCoeffs()[idx];  
+ }
+}
+     return res;
+    }
+};
+template<typename T>
+class PolyDiff {
+public:
+static Polynomial<T> differentiate(const Polynomial<T>& p) {
+ vector<T> res;
+ for(size_t i=1;i<p.getCoeffs().size();++i)
+ res.push_back(p.getCoeffs()[i]*static_cast<int>(i));
+return Polynomial<T>(res.empty()?vector<T>{T()}:res);
+    }
+};
+vector<string> split(const string& s) {
+vector<string> tokens;
+  size_t start=0,end;
+while((end=s.find(' ',start))!=string::npos) {
+ tokens.push_back(s.substr(start,end-start));
+  start=end+1;
+    }
+tokens.push_back(s.substr(start));
+    return tokens;
+}
+int main() {
+int q;
+cin >> q;
+cin.ignore();
+
+while (q--) {
+  int op;
+    cin >> op;
+    cin.ignore();
+
+string type;
+getline(cin, type);
+if (op == 1) {  // Polynomial Multiplication
+   if (type == "integer") {
+      int d1, d2;
+      cin >> d1;
+      vector<long long> c1(d1);
+      for (int i = 0; i < d1; ++i) cin >> c1[i];
+cin >> d2;
+    vector<long long> c2(d2);
+    for (int i = 0; i < d2; ++i) cin >> c2[i];
+auto res = PolyMult<long long>::multiply(Polynomial<long long>(c1), Polynomial<long long>(c2));
+auto rc = res.getCoeffs();
+for (size_t i = 0; i < rc.size(); ++i) cout << (i ? " " : "") << rc[i];
+    cout << endl;
+    } 
+else if (type == "float") {
+   int d1, d2;
+    cin >> d1;
+     vector<long double> c1(d1);
+        for (int i = 0; i < d1; ++i) cin >> c1[i];
+cin >> d2;
+   vector<long double> c2(d2);
+    for (int i = 0; i < d2; ++i) cin >> c2[i];
+auto res = PolyMult<long double>::multiply(Polynomial<long double>(c1), Polynomial<long double>(c2));
+auto rc = res.getCoeffs();
+  cout << fixed << setprecision(6);
+    for (size_t i = 0; i < rc.size(); ++i) cout << (i ? " " : "") << rc[i];
+     cout << endl;
+        cout.unsetf(ios::fixed);
+    } 
+else if (type == "complex") {
+    int d1, d2;
+    cin >> d1;
+    vector<Complex> c1;
+    for (int i = 0; i < d1; ++i) {
+    long long r, i_val;
+    cin >> r >> i_val;
+    c1.emplace_back(r, i_val);
+    }
+cin >> d2;
+    vector<Complex> c2;
+    for (int i = 0; i < d2; ++i) {
+    long long r, i_val;
+    cin >> r >> i_val;
+    c2.emplace_back(r, i_val);
+    }
+auto res = PolyMult<Complex>::multiply(Polynomial<Complex>(c1), Polynomial<Complex>(c2));
+auto rc = res.getCoeffs();
+for (size_t i = 0; i < rc.size(); ++i) {
+    if (i) cout << " ";
+    cout << rc[i].real << " " << rc[i].imag;
+ }
+        cout << endl;
+ }
+   } 
+ else if (op == 2) {  // Polynomial Evaluation
+ if (type == "integer") {
+    int d;
+    cin >> d;
+vector<long long> c(d);
+  for (int i = 0; i < d; ++i) cin >> c[i];
+    long long x;
+ cin >> x;
+cout << PolyEval<long long>::evaluate(Polynomial<long long>(c), x) << endl;
+      } 
+else if (type == "float") {
+int d;
+ cin >> d;
+ vector<long double> c(d);
+   for (int i = 0; i < d; ++i) cin >> c[i];
+    long double x;
+ cin >> x;
+cout << fixed << setprecision(6);
+cout << PolyEval<long double>::evaluate(Polynomial<long double>(c), x) << endl;
+cout.unsetf(ios::fixed);
+  } 
+else if (type == "string") {
+int d;
+ cin >> d;
+    cin.ignore();  
+ string line;
+ getline(cin, line);
+ vector<string> c = split(line);
+ int x;
+    cin >> x;
+    cout << PolyEval<string>::evaluate(Polynomial<string>(c), x) << endl;
+  }
+        } 
+ else if (op == 3) {  // Polynomial Differentiation
+    if (type == "integer") {
+int d;
+    cin >> d;
+vector<long long> c(d);
+    for (int i = 0; i < d; ++i) cin >> c[i];
+auto res = PolyDiff<long long>::differentiate(Polynomial<long long>(c));
+auto rc = res.getCoeffs();
+for (size_t i = 0; i < rc.size(); ++i) cout << (i ? " " : "") << rc[i];
+      cout << endl;
+  } 
+else if (type == "float") {
+    int d;
+    cin >> d;
+  vector<long double> c(d);
+        for (int i = 0; i < d; ++i) cin >> c[i];
+auto res = PolyDiff<long double>::differentiate(Polynomial<long double>(c));
+auto rc = res.getCoeffs();
+    cout << fixed << setprecision(6);
+for (size_t i = 0; i < rc.size(); ++i) cout << (i ? " " : "") << rc[i];
+    cout << endl;
+cout.unsetf(ios::fixed);
+  }  }
+ }
+    return 0;
+}
