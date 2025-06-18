@@ -1,0 +1,223 @@
+#include<bits/stdc++.h>
+using namespace std;
+
+class Graph
+{
+private:
+    int N;
+    unordered_map<int, set<int>> adj; 
+
+public:
+    Graph(int vertices = 0) : N(vertices) {}
+
+    void addEdge(int u, int v)
+    {
+        adj[u].insert(v);
+        adj[v].insert(u);
+    }
+
+    void removeEdge(int u, int v)
+    {
+        if (adj.find(u) != adj.end() && adj[u].find(v)!=adj[u].end()) 
+        {
+            adj[u].erase(v);
+            adj[v].erase(u);
+        }
+    }
+
+    bool isReachable(int u, int v)
+    {
+        if(u==v) return true;
+        if (adj.find(u) == adj.end() || adj.find(v) == adj.end()) return false;
+        set<int> visited;
+        return dfs(u, v, visited);
+    }
+
+    friend ostream& operator << (ostream& cout_new, Graph& g)
+    {
+        int N = g.N;
+        for (int i = 0; i < N; i++)
+        {
+            cout_new << "Vertex "<<i << ": ";
+            if (g.adj.find(i) != g.adj.end())
+            {
+                for (auto it = g.adj.at(i).begin(); it != g.adj.at(i).end(); it++)
+                {
+                    cout_new << *it << " ";
+                }
+            }
+            cout_new << "\n";
+        }
+        return cout_new;
+    }
+    
+    friend istream& operator >> (istream& cin_new, Graph& g)
+    {
+        int M, u, v;
+        cin_new >> g.N >> M;
+        g.adj.clear();
+        int N = g.N;
+        for (int i = 0; i < N; i++)
+        {
+            g.adj[i] = {};
+        }
+        for (int i = 0; i < M; i++)
+        {
+            cin_new >> u >> v;
+            g.addEdge(u, v);
+        }
+        return cin_new;
+    }
+    
+    Graph operator -(Graph& graph) //Intersection
+    {
+        int new_count = max(N,graph.N);
+        Graph new_graph(new_count);
+        for (int i = 0; i < new_count; i++)
+        {
+            new_graph.adj[i] = {};
+        }
+        for (auto it = adj.begin(); it != adj.end(); it++)
+        {
+            int node = it->first;
+            auto neighbors = it->second;
+            if (graph.adj.find(node) != graph.adj.end())
+            {
+                for (auto it2 = neighbors.begin(); it2 != neighbors.end(); it2++)
+                {
+                    if (graph.adj[node].find(*it2) != graph.adj[node].end())
+                    {
+                        new_graph.addEdge(node, *it2);
+                    }
+                }
+            }
+        }
+        return new_graph;
+    }
+    Graph operator !() //Complement
+    {
+        Graph comp(N);
+        for (int i = 0; i < N; i++)
+        {
+            comp.adj[i] = {};
+        }
+        for (int i = 0; i < N; ++i)
+        {
+            for (int j = i+1; j < N; ++j)
+            {
+                if (adj[i].find(j) == adj[i].end())
+                {
+                    comp.addEdge(i, j);
+                }
+            }
+        }
+        return comp;
+    }
+    
+    Graph operator +(Graph& graph) //Union
+    {
+        int new_count = max(N,graph.N);
+        Graph new_graph(new_count);
+        for (int i = 0; i < new_count; i++)
+        {
+            new_graph.adj[i] = {};
+        }
+        for (auto it = adj.begin(); it != adj.end(); it++)
+        {
+            int node = it->first;
+            auto neighbors = it->second;
+            for (auto it2 = neighbors.begin(); it2 != neighbors.end(); it2++)
+            {
+                new_graph.addEdge(node, *it2);
+            }
+        }
+        for (auto it = graph.adj.begin(); it != graph.adj.end(); it++)
+        {
+            int node = it->first;
+            auto neighbors = it->second;
+            for (auto it2 = neighbors.begin(); it2 != neighbors.end(); it2++)
+            {
+                new_graph.addEdge(node, *it2);
+            }
+        }
+        return new_graph;
+    }
+    
+public:
+    bool dfs(int u, int v, set<int>& visited)
+    {
+        if (u == v) return true;
+        visited.insert(u);
+        for (auto it = adj[u].begin(); it != adj[u].end(); it++)
+        {
+            if (visited.find(*it) == visited.end() && dfs(*it, v, visited))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+};
+
+int main()
+{
+    Graph g1;
+    string command;
+    while (cin >> command)
+    {
+        if (command == "Graph")
+        {
+            Graph temp;
+            cin >> temp;
+            g1 = temp;
+        }
+        else if (command == "union")
+        {
+            Graph g2;
+            string s;
+            cin>>s; //dummy to take "Graph" as string input
+            cin >> g2;
+            g1 = g1 + g2;
+        }
+        else if (command == "intersection")
+        {
+            Graph g2;
+            string s;
+            cin>>s; //dummy to take "Graph" as string input
+            cin >> g2;
+            g1 = g1 - g2;
+        }
+        else if (command == "complement")
+        {
+           g1 = !g1;
+        }
+        else if (command == "isReachable")
+        {
+            int u, v;
+            cin >> u >> v;
+            if(g1.isReachable(u,v)) cout<<"Yes"<<endl;
+            else cout<<"No"<<endl;
+        }
+        else if (command == "add_edge")
+        {
+            int u, v;
+            cin >> u >> v;
+            g1.addEdge(u, v);
+        }
+        else if (command == "remove_edge")
+        {
+            int u, v;
+            cin >> u >> v;
+            g1.removeEdge(u, v);
+        }
+        else if (command == "printGraph")
+        {
+            cout << g1;
+        }
+        else if (command == "end")
+        {
+            break;
+        }
+    }
+    return 0;
+}
