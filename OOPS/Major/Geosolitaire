@@ -1,0 +1,177 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+using namespace std;
+
+class Card {
+public:
+ virtual int getArea() const = 0;
+ virtual void print(ostream& os) const = 0;
+ virtual ~Card() = default;
+
+  bool operator<=(const Card& other) 
+       const { return getArea() <= other.getArea(); }
+ bool operator<(const Card& other) 
+       const { return getArea() < other.getArea(); }
+ bool operator>(const Card& other) 
+       const { return getArea() > other.getArea(); }
+
+  friend ostream& operator<<(ostream& os, const Card& card) {
+      card.print(os);
+        return os;
+    }
+};
+class Square : public Card {
+ int edge;
+public:
+  Square(int e) : edge(e) {}
+    int getArea() const override { return edge * edge; }
+      void print(ostream& os) const override { os << "SQUARE " << edge; }
+};
+
+class Rectangle : public Card {
+  int length, width;
+public:
+  Rectangle(int l, int w) : length(l), width(w) {}
+ int getArea() const override { return length * width; }
+ void print(ostream& os) const override { os << "RECTANGLE " << length << " " << width; }
+};
+class Triangle : public Card {
+  int base, height;
+public:
+  Triangle(int b, int h) : base(b), height(h) {}
+ int getArea() const override { return (base * height) / 2; }
+    void print(ostream& os) const override { os << "TRIANGLE " << base << " " << height; }
+};
+
+class CardOrganizer {
+vector<vector<Card*>> piles;
+vector<Card*> allCards;
+  mutable vector<Card*> lastComputedLIS;  
+    
+ size_t findPileIndex(Card* card){
+     int left=0;
+     int right=piles.size() - 1;
+     int result=piles.size();
+        
+ while(left <= right){
+     int mid = left + (right - left) / 2;
+     if (card->getArea() <= piles[mid].back()->getArea()) {
+         result = mid;
+         right = mid - 1;
+} 
+else{  left = mid + 1;
+       }
+    }      
+        return result;
+ }
+
+public:
+    CardOrganizer() = default;
+    
+ void addCard(Card* card) {
+     allCards.push_back(card);
+     size_t pileIndex = findPileIndex(card);
+
+ if(pileIndex < piles.size()){
+    piles[pileIndex].push_back(card);
+}
+else{   piles.push_back({card});
+         }
+      lastComputedLIS.clear();  
+  }
+
+  size_t getPileCount()
+  const{ return piles.size(); 
+           }
+const vector<Card*>& getLIS() 
+   const {
+        if(lastComputedLIS.empty()){
+            if (allCards.empty()) return lastComputedLIS;
+vector<pair<int, size_t>> dp; 
+vector<size_t> parent(allCards.size(), -1);
+    for(size_t i = 0; i < allCards.size(); ++i){
+    int area = allCards[i]->getArea();
+    auto it = lower_bound(dp.begin(),dp.end(),make_pair(area, size_t(0)),[](const pair<int,size_t>& a,const pair<int,size_t>& b){
+        return a.first < b.first;
+     }
+ );
+                
+if(it == dp.end()){
+    parent[i] = dp.empty() ? -1 : dp.back().second;
+      dp.emplace_back(area, i);
+  }
+else{ *it = make_pair(area, i);
+       parent[i] = (it == dp.begin()) ? -1 : (it-1)->second;
+     }
+}
+for(size_t i = dp.back().second; i != -1; i = parent[i]){
+       lastComputedLIS.push_back(allCards[i]);
+   }
+ reverse(lastComputedLIS.begin(),lastComputedLIS.end());
+   }
+ return lastComputedLIS;
+    }
+~CardOrganizer() {
+  for(Card* card : allCards){
+     delete card;
+     }
+  }
+ CardOrganizer(const CardOrganizer&)=delete;
+  CardOrganizer& operator=(const CardOrganizer&)=delete;
+};
+
+int main() {
+
+  ios_base::sync_with_stdio(false);
+   cin.tie(nullptr);
+
+    int q;
+    cin >> q;
+    CardOrganizer organizer;
+    bool lisComputed = false;
+    vector<Card*> sequence;
+
+ while(q--){
+    int type;
+    cin >> type;
+
+ if(type == 1){
+    string shape;
+    cin >> shape;
+if(shape == "SQUARE"){
+    int edge;
+     cin >> edge;
+    organizer.addCard(new Square(edge));
+    lisComputed = false;
+    } 
+else if(shape == "RECTANGLE"){
+    int l, w;
+    cin >> l >> w;
+organizer.addCard(new Rectangle(l, w));
+    lisComputed = false;
+    } 
+else if (shape == "TRIANGLE") {
+    int b, h;
+    cin >> b >> h;
+     organizer.addCard(new Triangle(b, h));
+      lisComputed = false;
+      }
+    }
+else if(type == 2){
+     cout << organizer.getPileCount() << '\n';
+    }
+else if(type == 3){
+    if(!lisComputed){
+    sequence = organizer.getLIS();
+       lisComputed = true;
+      }
+  cout << sequence.size() << '\n';
+for(Card* card : sequence){
+    cout << *card << '\n';
+            }
+        }
+    }
+    return 0;
+}
