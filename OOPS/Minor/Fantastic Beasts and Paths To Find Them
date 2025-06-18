@@ -1,0 +1,211 @@
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+using namespace std;
+
+class Island {
+public:
+string id;
+ virtual pair<double,double>get_centroid()const=0;
+ virtual double get_max_radius()const=0;
+ virtual ~Island(){}
+
+  bool overlaps_with(const Island* another) const {
+    auto [cx1, cy1]=this->get_centroid();
+    auto [cx2, cy2]=another->get_centroid();
+    double dx=cx1-cx2, dy=cy1-cy2;
+    double dist=sqrt(dx*dx+dy*dy);
+       return dist <= (this->get_max_radius() + another->get_max_radius() + 1e-6);
+    }
+};
+
+class Rectangle : public Island{
+public:
+    vector<pair<int, int>>vertices;
+
+Rectangle(string sid, int x1, int y1, int x2, int y2,
+    int x3,int y3,int x4,int y4){
+     id = sid;
+    vertices = {{x1, y1}, {x2, y2}, {x3, y3}, {x4, y4}};
+  }
+pair<double, double> get_centroid() const override {
+  double cx = 0, cy = 0;
+    for (auto& [x, y] : vertices) {
+      cx+=x;
+      cy += y;
+    }
+return {cx/4.0,cy/4.0};
+ }
+double get_max_radius() const override {
+auto [cx, cy] = get_centroid();
+double max_d = 0;
+  for (auto& [x, y] : vertices){
+    double dx = x - cx, dy = y - cy;
+    max_d = max(max_d, sqrt(dx * dx + dy * dy));
+     }
+  return max_d;
+    }
+};
+class Triangle : public Island {
+public:
+ vector<pair<int, int>> vertices;
+Triangle(string sid, int x1,int y1,int x2,int y2,int x3,int y3){
+    id = sid;
+ vertices = {{x1, y1}, {x2, y2}, {x3, y3}};
+    }
+ pair<double, double> get_centroid() const override {
+    double cx = 0, cy = 0;
+    for (auto& [x, y] : vertices) {
+      cx+=x;
+     cy+=y;
+        }
+  return {cx/3.0,cy/3.0};
+    }
+double get_max_radius() const override {
+ auto [cx, cy] = get_centroid();
+  double max_d = 0;
+    for(auto& [x, y] : vertices){
+    double dx = x - cx, dy = y - cy;
+    max_d = max(max_d, sqrt(dx * dx + dy * dy));
+        }
+  return max_d;
+    }
+};
+
+class Circle : public Island {
+public:
+    int cx, cy, rad;
+
+Circle(string sid, int x, int y, int r) : cx(x),cy(y),rad(r){
+    id = sid;
+    }
+pair<double, double> get_centroid()const override {
+   return {cx, cy};
+    }
+double get_max_radius() const override {
+    return rad;
+    }
+};
+
+int total;
+vector<Island*> island_list;
+vector<vector<int>> adjacency;
+vector<int> path_sequence;
+
+bool dp[1 << 17][17];
+int parent[1 << 17][17];
+
+int main() {
+  cin >> total;
+   island_list.resize(total);
+
+  for (int i = 0; i < total; ++i) {
+    string kind, sid;
+    cin >> kind >> sid;
+ if (kind == "RECTANGLE"){
+    int x1, y1, x2, y2, x3, y3, x4, y4;
+    cin >> x1 >> y1 >> x2 >> y2 >> x3 >> y3 >> x4 >> y4;
+    island_list[i]=new Rectangle(sid, x1, y1, x2, y2,x3,y3,x4,y4);
+}
+else if (kind == "TRIANGLE"){
+    int x1, y1, x2, y2, x3, y3;
+    cin >> x1 >> y1 >> x2 >> y2 >> x3 >> y3;
+    island_list[i] = new Triangle(sid, x1, y1, x2, y2, x3, y3);
+}
+else if(kind == "CIRCLE"){
+    int x, y, r;
+    cin >> x >> y >> r;
+    island_list[i] = new Circle(sid, x, y, r);
+     }
+  }
+adjacency.assign(total, {});
+  for (int i = 0; i < total; ++i) {
+    for (int j = 0; j < total; ++j){
+       if (i != j && island_list[i]->overlaps_with(island_list[j])){
+          adjacency[i].push_back(j);
+          }
+       }
+ }
+ for (int i = 0; i < total; ++i){
+   dp[1 << i][i]=true;
+    parent[1 << i][i] = -1;
+    }
+
+ for(int mask = 1; mask < (1 << total); ++mask){
+    for (int u = 0; u < total; ++u) {
+     if (!(mask & (1 << u)) || !dp[mask][u]) continue;
+      for(int v : adjacency[u]){
+        if(!(mask & (1 << v))){
+    int next_mask = mask | (1 << v);
+    if (!dp[next_mask][v] || island_list[u]->id < island_list[parent[next_mask][v]]->id){
+          dp[next_mask][v] = true;
+          parent[next_mask][v] = u;
+              }
+            }
+         }
+     }
+ }
+vector<string> best_lex_path;
+int final_mask = (1 << total) - 1;
+bool found = false;
+ for(int end = 0; end < total; ++end){
+    if(!dp[final_mask][end])continue;
+
+vector<int> temp;
+   int m = final_mask, curr = end;
+
+ while(curr != -1){
+    temp.push_back(curr);
+     int prev = parent[m][curr];
+      m^=(1 << curr);
+       curr = prev;
+   }
+
+    reverse(temp.begin(), temp.end());
+    vector<string> ids;
+    for (int idx : temp) ids.push_back(island_list[idx]->id);
+    if (!found || ids < best_lex_path){
+       best_lex_path = ids;
+        found = true;
+        }
+    }
+
+if (found){
+    cout << "YES\n";
+    for (auto& id : best_lex_path) cout << id << " ";
+    cout << "\n";
+} 
+else{
+ int max_len = 0;
+  vector<string> best_partial;
+ for (int mask = 1; mask < (1 << total); ++mask) {
+    for (int end = 0; end < total; ++end) {
+        if (!dp[mask][end]) continue;
+   vector<int> temp;
+     int m = mask, curr = end;
+ while (curr != -1){
+    temp.push_back(curr);
+    int prev = parent[m][curr];
+    m^=(1 << curr);
+     curr = prev;
+    }
+
+    reverse(temp.begin(), temp.end());
+     vector<string> ids;
+        for (int idx : temp) ids.push_back(island_list[idx]->id);
+    if ((int)ids.size() > max_len || ((int)ids.size() == max_len && ids < best_partial)) {
+        max_len = ids.size();
+        best_partial = ids;
+        }
+     }
+ }
+  cout << "NO\n" << max_len << "\n";
+    for (auto& id : best_partial) cout << id << " ";
+    cout << "\n";
+    }
+ for(Island* ptr : island_list)
+    delete ptr;
+
+    return 0;
+}
