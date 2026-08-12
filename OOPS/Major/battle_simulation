@@ -1,0 +1,440 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include<queue>
+using namespace std;
+
+class QNS {
+private:
+    int powerlevel;
+    int durability;
+    int energystorage;
+    int heatlevel;
+
+public:
+    // Default constructor
+    QNS() {
+        powerlevel = 1000;
+        durability = 500;
+        energystorage = 300;
+        heatlevel = 0;
+    }
+
+    // Parameterized constructor
+    QNS(int p, int d, int e, int h) {
+        powerlevel = min(5000,p);
+        durability = d;
+        energystorage = e;
+        heatlevel = max(0,h);
+        //name = suitname;
+    }
+
+    // Copy constructor
+    QNS(const QNS &other) {
+        powerlevel = min(5000,other.powerlevel);
+        durability = other.durability;
+        energystorage = other.energystorage;
+        heatlevel = other.heatlevel;
+        //name = other.name;
+        
+    }
+
+    // Operator Overloading
+    QNS operator+(QNS &a) {
+         energystorage+=a.powerlevel;
+         durability+=a.durability;
+         powerlevel+=a.energystorage;
+          
+        return *this;
+    }
+
+    QNS operator-(int damage) {
+        int x=damage;
+        durability-=x;
+        energystorage+=x;
+        heatlevel+=x;
+          
+        heatlevel=max(heatlevel,0);  
+        return *this;
+    }
+
+    QNS operator*(int factor) {
+        int x=factor;
+        powerlevel+=((powerlevel*x)/100);
+        energystorage+=(5*x);
+        heatlevel+=x;
+         powerlevel=min(5000,powerlevel);  
+        heatlevel=max(heatlevel,0);  
+        return * this;
+    }
+
+    QNS operator/(int x) {
+        durability+=x;
+        heatlevel-=x;
+         
+        heatlevel=max(heatlevel,0);  
+        return * this;
+    }
+
+    // Power Boost Functions
+    void boostPower(int factor) {
+        (*this) * factor ;
+    }
+
+    void boostPower(QNS &otherSuit) {
+         (*this) + otherSuit ;
+    }
+
+    // Comparison Operators
+    bool operator==(QNS &other) {
+        return (powerlevel == other.powerlevel && durability == other.durability);
+    }
+
+    bool operator<(QNS &other) {
+        return powerlevel+durability < other.powerlevel+other.durability;
+    }
+
+    // Getters
+    int getPower() { return powerlevel; }
+    int getDurability() { return durability; }
+    int getEnergy() { return energystorage; }
+    int getHeat() { return heatlevel; }
+
+    // Setters
+    void setPower(int P) { powerlevel = P; }
+    void setDurability(int D) { durability = D; }
+    void setEnergy(int E) { energystorage = E; }
+    void setHeat(int H) { heatlevel = H; }
+};
+ queue<QNS> suits;
+// Avenger Class
+class Avenger {
+private:
+    string name;
+    QNS suit;
+    int attackStrength;
+
+public:
+    // Constructor
+    Avenger(string avName, QNS avSuit, int strength) {
+        name = avName;
+        suit = avSuit;
+        attackStrength = strength;
+    }
+
+    // Battle Methods
+    void attack(Avenger &enemy) {
+        enemy.suit = enemy.suit - attackStrength;
+    }
+   
+    void upgradeSuit(QNS &extraSuit) {
+        suit = suit + extraSuit;
+    }
+
+    void repair(int x) {
+        suit /x ;
+    }
+
+    void printStatus() {
+        cout << name<<" "<< suit.getPower()<<" "<< suit.getDurability()<<" "<< suit.getEnergy()<<" "<< suit.getHeat()<<" "<< endl;
+    }
+
+    string getName() { return name; }
+    QNS & getSuit() { return suit; }
+};
+
+// Battle Class
+class Battle {
+private:
+    vector<Avenger> heroes;
+    vector<Avenger> enemies;
+    vector<string> battleLog;
+
+public:
+    // Constructor
+    Battle(vector<Avenger> &h, vector<Avenger> &e) {
+        heroes = h;
+        enemies = e;
+    }
+
+    
+     
+
+    void attack(string attacker, string target) {
+        for (Avenger &hero : heroes) {
+            if (hero.getName() == attacker&&hero.getSuit().getDurability()>0&&hero.getSuit().getHeat()<500) {
+                for (Avenger &enemy : enemies) {
+                    if (enemy.getName() == target&&enemy.getSuit().getDurability()>0) {
+                        hero.attack(enemy);
+                        battleLog.push_back(attacker + " attacks " + target);
+                        if(enemy.getSuit().getDurability()<=0)battleLog.push_back(target + " suit destroyed");
+                        else if(enemy.getSuit().getHeat()>500)battleLog.push_back(target + " suit overheated");
+                        
+                        return;
+                    }
+                }
+            }
+        }
+
+        for (Avenger &hero : heroes) {
+            if (hero.getName() == attacker&&hero.getSuit().getDurability()>0&&hero.getSuit().getHeat()<500) {
+                for (Avenger &enemy : heroes) {
+                    if (enemy.getName() == target&&enemy.getSuit().getDurability()>0) {
+                        hero.attack(enemy);
+                        battleLog.push_back(attacker + " attacks " + target);
+                        if(enemy.getSuit().getDurability()<=0)battleLog.push_back(target + " suit destroyed");
+                        else if(enemy.getSuit().getHeat()>500)battleLog.push_back(target + " suit overheated");
+                        
+                        return;
+                    }
+                }
+            }
+        }
+
+        for (Avenger &hero : enemies) {
+            if (hero.getName() == attacker&&hero.getSuit().getDurability()>0&&hero.getSuit().getHeat()<500) {
+                for (Avenger &enemy : enemies) {
+                    if (enemy.getName() == target&&enemy.getSuit().getDurability()>0) {
+                        hero.attack(enemy);
+                        battleLog.push_back(attacker + " attacks " + target);
+                        if(enemy.getSuit().getDurability()<=0)battleLog.push_back(target + " suit destroyed");
+                        else if(enemy.getSuit().getHeat()>500)battleLog.push_back(target + " suit overheated");
+                        
+                        return;
+                    }
+                }
+            }
+        }
+
+        for (Avenger &hero : enemies) {
+            if (hero.getName() == attacker&&hero.getSuit().getDurability()>0&&hero.getSuit().getHeat()<500) {
+                for (Avenger &enemy : heroes) {
+                    if (enemy.getName() == target&&enemy.getSuit().getDurability()>0) {
+                        hero.attack(enemy);
+                        battleLog.push_back(attacker + " attacks " + target);
+                        if(enemy.getSuit().getDurability()<=0)battleLog.push_back(target + " suit destroyed");
+                        else if(enemy.getSuit().getHeat()>500)battleLog.push_back(target + " suit overheated");
+
+                        return;
+                    }
+                }
+            }
+        }
+
+        return;
+    }
+
+    void upgrade(string avengerName) {
+        for (Avenger &hero : heroes) {
+            if (hero.getName() == avengerName) {
+                if(suits.empty()){
+                    battleLog.push_back(avengerName + " upgrade Fail");
+                    return;
+                }
+                hero.upgradeSuit(suits.front()); suits.pop();
+                battleLog.push_back(avengerName + " upgraded ");
+                return;
+            }
+        }
+
+        for (Avenger &hero : enemies) {
+            if (hero.getName() == avengerName) {
+                if(suits.empty()){
+                    battleLog.push_back(avengerName + " upgrade Fail");
+                    return;
+                }
+                hero.upgradeSuit(suits.front()); suits.pop();
+                battleLog.push_back(avengerName + " upgraded ");
+                return;
+            }
+        }
+        return;
+    }
+
+    void repair(string avengerName, int x) {
+
+        for (Avenger &hero : heroes) {
+            if (hero.getName() == avengerName&&hero.getSuit().getDurability()>0) {
+                hero.repair(x);
+                battleLog.push_back(avengerName + " repaired " );
+                return;
+            }
+        }
+
+        for (Avenger &hero : enemies) {
+            if (hero.getName() == avengerName&&hero.getSuit().getDurability()>0) {
+                hero.repair(x);
+                battleLog.push_back(avengerName + " repaired " );
+                return;
+            }
+        }
+        return;
+
+    }
+
+  // void boostPower();
+void boostPower(string avengerName, QNS newSuit) {
+    for (Avenger &hero : heroes) {
+        if (hero.getName() == avengerName&&hero.getSuit().getDurability()>0) {
+            hero.upgradeSuit(newSuit);
+            battleLog.push_back(avengerName + " boosted ");
+            if(hero.getSuit().getHeat()>500) battleLog.push_back(avengerName + " suit overheated");
+            return;
+        }
+    }
+
+    for (Avenger &hero : enemies) {
+        if (hero.getName() == avengerName&&hero.getSuit().getDurability()>0) {
+            hero.upgradeSuit(newSuit);
+            battleLog.push_back(avengerName + " boosted ");
+            if(hero.getSuit().getHeat()>500) battleLog.push_back(avengerName + " suit overheated");
+            return;
+        }
+    }
+     
+}
+
+void avengerStatus(string avengerName) {
+    for (Avenger &hero : heroes) {
+        if (hero.getName() == avengerName) {
+            hero.printStatus();
+            return;
+        }
+    }
+
+    for (Avenger &hero : enemies) {
+        if (hero.getName() == avengerName) {
+            hero.printStatus();
+            return;
+        }
+    }
+
+    cout << avengerName << " is not in battle." << endl;
+}
+
+ //   void avengerStatus();
+
+
+    void boostPowerByFactor(string avengerName, int y) {
+        for (Avenger &hero : heroes) {
+            if (hero.getName() == avengerName&&hero.getSuit().getDurability()>0) {
+
+                hero.getSuit().boostPower(y);
+                battleLog.push_back(avengerName + " boosted ");
+                if(hero.getSuit().getHeat()>500) battleLog.push_back(avengerName + " suit overheated");
+                return;
+            }
+        }
+
+        for (Avenger &hero : enemies) {
+            if (hero.getName() == avengerName&&hero.getSuit().getDurability()>0) {
+
+                hero.getSuit().boostPower(y);
+                battleLog.push_back(avengerName + " boosted ");
+                if(hero.getSuit().getHeat()>500) battleLog.push_back(avengerName + " suit overheated");
+                return;
+            }
+        }
+        return;
+    }
+
+    void printBattleLog() {
+        for (string log : battleLog) {
+            cout << log << endl;
+        }
+    }
+
+    int Result() {
+        int heroPower = 0, enemyPower = 0;
+        for (Avenger &hero : heroes) if(hero.getSuit().getDurability()>0)heroPower += hero.getSuit().getPower()+hero.getSuit().getDurability();
+        for (Avenger &enemy : enemies) if(enemy.getSuit().getDurability()>0)enemyPower += enemy.getSuit().getPower()+enemy.getSuit().getDurability();
+        
+        if (heroPower > enemyPower) return 1;
+        else if (heroPower < enemyPower) return -1;
+        else return 0;
+    }
+};
+
+int main() {
+    int k, n, m;
+   
+    vector<Avenger> heroes, enemies;
+
+    cin >> k>> n >> m;;
+    for (int i = 0; i < k; i++) {
+        int P, D, E, H;
+        cin >> P >> D >> E >> H;
+        suits.push(QNS(P, D, E, H));
+    }
+
+    for (int i = 0; i < n ; i++) {
+        string name;
+        int strength;
+        cin >> name >> strength;
+        if (!suits.empty()) {
+            heroes.push_back(Avenger(name, suits.front(), strength));
+            suits.pop();
+        } else {
+            cout << name << " is out of fight" << endl;
+        }
+    }
+
+    for (int i = 0; i < m ; i++) {
+        string name;
+        int strength;
+        cin >> name >> strength;
+        if (!suits.empty()) {
+            enemies.push_back(Avenger(name, suits.front(), strength));
+            suits.pop();
+        } else {
+            cout << name << " is out of fight" << endl;
+        }
+    }
+
+    Battle battle(heroes, enemies);
+
+    string command;
+    while (command!="End") {
+        cin>>command;
+        if (command == "BattleBegin") {
+           
+        } else if (command == "Attack") {
+            string av1, av2;
+            cin >> av1 >> av2;
+            battle.attack(av1, av2);
+        } else if (command == "Repair") {
+            string name;
+            int x;
+            cin >> name >> x;
+            battle.repair(name, x);
+        } else if (command == "BoostPowerByFactor") {
+            string name;
+            int y;
+            cin >> name >> y;
+            battle.boostPowerByFactor(name, y);
+        } else if (command == "BoostPower") {
+            string name;
+            int P, D, E, H;
+            cin >> name >> P >> D >> E >> H;
+            battle.boostPower(name, QNS(P, D, E, H));
+        } else if (command == "AvengerStatus") {
+            string name;
+            cin >> name;
+            battle.avengerStatus(name);
+        } else if (command == "Upgrade") {
+            string name;
+            cin >> name;
+            battle.upgrade(name);
+        } else if (command == "PrintBattleLog") {
+            battle.printBattleLog();
+        } else if (command == "BattleStatus") {
+            int Result=battle.Result();
+            cout<<(Result==1 ? "heroes are winning" :  (Result==0 ? "tie" :"enemies are winning"))<<'\n';
+            
+        } else if (command == "End") {
+            break;
+        }
+    }
+
+    return 0;
+}
